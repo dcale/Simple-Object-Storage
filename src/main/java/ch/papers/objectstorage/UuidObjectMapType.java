@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
 
-import ch.papers.objectstorage.models.UuidObject;
+import ch.papers.objectstorage.models.AbstractUuidObject;
 
 
 /**
@@ -14,9 +14,9 @@ import ch.papers.objectstorage.models.UuidObject;
  * a.decarli@papers.ch
  */
 public class UuidObjectMapType implements ParameterizedType {
-    private Class<? extends UuidObject> wrapped;
+    private Class<? extends AbstractUuidObject> wrapped;
 
-    public UuidObjectMapType(Class<? extends UuidObject> wrapper) {
+    public UuidObjectMapType(Class<? extends AbstractUuidObject> wrapper) {
         this.wrapped = wrapper;
     }
 

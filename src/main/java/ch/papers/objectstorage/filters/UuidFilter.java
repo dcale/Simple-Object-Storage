@@ -2,7 +2,7 @@ package ch.papers.objectstorage.filters;
 
 import java.util.UUID;
 
-import ch.papers.objectstorage.models.UuidObject;
+import ch.papers.objectstorage.models.AbstractUuidObject;
 
 /**
  * Created by Alessandro De Carli (@a_d_c_) on 23/01/16.
@@ -18,7 +18,7 @@ public class UuidFilter implements Filter {
     }
 
     @Override
-    public boolean matches(UuidObject object) {
+    public boolean matches(AbstractUuidObject object) {
         return object.getUuid().equals(this.matchingUUID);
     }
 }

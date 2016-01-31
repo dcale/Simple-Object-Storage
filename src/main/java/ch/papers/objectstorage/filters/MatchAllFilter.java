@@ -1,6 +1,6 @@
 package ch.papers.objectstorage.filters;
 
-import ch.papers.objectstorage.models.UuidObject;
+import ch.papers.objectstorage.models.AbstractUuidObject;
 
 /**
  * Created by Alessandro De Carli (@a_d_c_) on 23/01/16.
@@ -9,7 +9,7 @@ import ch.papers.objectstorage.models.UuidObject;
  */
 public class MatchAllFilter implements Filter  {
     @Override
-    public boolean matches(UuidObject object) {
+    public boolean matches(AbstractUuidObject object) {
         return true;
     }
 }

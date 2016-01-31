@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import ch.papers.objectstorage.filters.Filter;
 import ch.papers.objectstorage.listeners.OnResultListener;
 import ch.papers.objectstorage.listeners.OnStorageChangeListener;
-import ch.papers.objectstorage.models.UuidObject;
+import ch.papers.objectstorage.models.AbstractUuidObject;
 
 /**
  * To work on unit tests, switch the Test Artifact in the Build Variants view.
@@ -23,7 +23,7 @@ import ch.papers.objectstorage.models.UuidObject;
 public class ObjectStorageUnitTest {
     public final static File STORAGE_ROOT = new File(".");
 
-    public class TestModel extends UuidObject {
+    public class TestModel extends AbstractUuidObject {
         private final String name;
         private final String description;
         private TestModel nestedChild;
