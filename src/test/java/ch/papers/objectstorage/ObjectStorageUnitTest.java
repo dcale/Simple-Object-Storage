@@ -227,7 +227,7 @@ public class ObjectStorageUnitTest {
         System.out.println("took me " + (System.currentTimeMillis() - startTime) + "ms to commit " + entryNumber + " entries");
 
         final CountDownLatch mapLatch = new CountDownLatch(1);
-        Map<UUID, TestModel> bulkMap = new HashMap<>();
+        Map<UUID, TestModel> bulkMap = new HashMap<UUID, TestModel>();
         for (int i = 0; i < entryNumber; i++) {
             TestModel model = new TestModel("bla" + i, "desc");
             bulkMap.put(model.getUuid(), model);
@@ -359,5 +359,20 @@ public class ObjectStorageUnitTest {
             }
         }, TestModel.class);
         getMapLatch.await();
+    }
+
+    @Test
+    public void testSynchronousCalls() throws InterruptedException {
+        try {
+            UuidObjectStorage.getInstance().init(STORAGE_ROOT);
+            long startTime = System.currentTimeMillis();
+            List<TestModel> result = UuidObjectStorage.getInstance().getEntriesAsList(TestModel.class);
+            System.out.println("took me " + (System.currentTimeMillis() - startTime) + "ms to get " + result.size() + " entries as list");
+            startTime = System.currentTimeMillis();
+            Map<UUID,TestModel> resultMap = UuidObjectStorage.getInstance().getEntries(TestModel.class);
+            System.out.println("took me " + (System.currentTimeMillis() - startTime) + "ms to get " + resultMap.size() + " entries as Map");
+        } catch (UuidObjectStorageException e) {
+            e.printStackTrace();
+        }
     }
 }

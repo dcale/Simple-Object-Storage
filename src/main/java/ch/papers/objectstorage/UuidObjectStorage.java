@@ -23,6 +23,8 @@ import java.util.UUID;
 import ch.papers.objectstorage.filters.Filter;
 import ch.papers.objectstorage.filters.MatchAllFilter;
 import ch.papers.objectstorage.filters.UuidFilter;
+import ch.papers.objectstorage.listeners.BlockingOnResultListener;
+import ch.papers.objectstorage.listeners.DummyOnResultListener;
 import ch.papers.objectstorage.listeners.OnResultListener;
 import ch.papers.objectstorage.listeners.OnStorageChangeListener;
 import ch.papers.objectstorage.models.AbstractUuidObject;
@@ -50,6 +52,19 @@ public class UuidObjectStorage {
         this.rootPath = rootPath;
     }
 
+    public <T extends AbstractUuidObject> void addEntries(final Map<UUID, T> entries,final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
+        this.addEntries(entries, blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+    }
+
     public <T extends AbstractUuidObject> void addEntries(final Map<UUID, T> entries, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         new Thread(new Runnable() {
             @Override
@@ -63,6 +78,19 @@ public class UuidObjectStorage {
                 }
             }
         }).start();
+    }
+
+    public <T extends AbstractUuidObject> void addEntriesAsList(final List<T> entries,final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
+        this.addEntriesAsList(entries, blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
     }
 
     public <T extends AbstractUuidObject> void addEntriesAsList(final List<T> entries, final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
@@ -84,6 +112,19 @@ public class UuidObjectStorage {
         },clazz);
     }
 
+    public <T extends AbstractUuidObject> void addEntry(final T entry, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
+        this.addEntry(entry, blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+    }
+
     public <T extends AbstractUuidObject> void addEntry(final T entry, final OnResultListener<T> resultCallback, final Class<T> clazz) {
         final Map<UUID, T> entriesToAdd = new HashMap<UUID, T>();
         entriesToAdd.put(entry.getUuid(),entry);
@@ -100,6 +141,19 @@ public class UuidObjectStorage {
         },clazz);
     }
 
+    public <T extends AbstractUuidObject> void deleteEntry(final T entry, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
+        this.deleteEntry(entry, blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+    }
+
     public <T extends AbstractUuidObject> void deleteEntry(final T entry, final OnResultListener<T> resultCallback, final Class<T> clazz) {
         this.deleteEntries(new UuidFilter(entry.getUuid()), new OnResultListener<Map<UUID, T>>() {
             @Override
@@ -112,6 +166,19 @@ public class UuidObjectStorage {
                 resultCallback.onError(message);
             }
         },clazz);
+    }
+
+    public <T extends AbstractUuidObject> void deleteEntries(final Filter<T> filter, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
+        this.deleteEntries(filter, blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
     }
 
     public <T extends AbstractUuidObject> void deleteEntries(final Filter<T> filter, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
@@ -130,6 +197,20 @@ public class UuidObjectStorage {
                 resultCallback.onError(message);
             }
         }, clazz);
+    }
+
+    public <T extends AbstractUuidObject> Map<UUID, T> getEntries(final Filter<T> filter, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<Map<UUID, T>> blockingOnResultListener = new BlockingOnResultListener<Map<UUID, T>>();
+        this.getEntries(filter, blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
     }
 
     public <T extends AbstractUuidObject> void getEntries(final Filter<T> filter, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
@@ -151,8 +232,36 @@ public class UuidObjectStorage {
         }).start();
     }
 
+    public <T extends AbstractUuidObject> Map<UUID, T> getEntries(final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<Map<UUID, T>> blockingOnResultListener = new BlockingOnResultListener<Map<UUID, T>>();
+        this.getEntries(blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
+    }
+
     public <T extends AbstractUuidObject> void getEntries(final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         this.getEntries(new MatchAllFilter(), resultCallback, clazz);
+    }
+
+    public <T extends AbstractUuidObject> List<T> getEntriesAsList(final Filter<T> filter, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<List<T>> blockingOnResultListener = new BlockingOnResultListener<List<T>>();
+        this.getEntriesAsList(filter, blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
     }
 
     public <T extends AbstractUuidObject> void getEntriesAsList(final Filter<T> filter, final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
@@ -169,8 +278,36 @@ public class UuidObjectStorage {
         }, clazz);
     }
 
+    public <T extends AbstractUuidObject> List<T> getEntriesAsList(final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<List<T>> blockingOnResultListener = new BlockingOnResultListener<List<T>>();
+        this.getEntriesAsList(blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
+    }
+
     public <T extends AbstractUuidObject> void getEntriesAsList(final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
         this.getEntriesAsList(new MatchAllFilter(), resultCallback, clazz);
+    }
+
+    public <T extends AbstractUuidObject> T getFirstMatchEntry(final Filter<T> filter, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<T> blockingOnResultListener = new BlockingOnResultListener<T>();
+        this.getFirstMatchEntry(filter, blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
     }
 
     public <T extends AbstractUuidObject> void getFirstMatchEntry(final Filter<T> filter, final OnResultListener<T> resultCallback, final Class<T> clazz) {
@@ -191,6 +328,20 @@ public class UuidObjectStorage {
         },clazz);
     }
 
+    public <T extends AbstractUuidObject> T getEntry(final UUID uuid, final Class<T> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<T> blockingOnResultListener = new BlockingOnResultListener<T>();
+        this.getEntry(uuid, blockingOnResultListener, clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+        return blockingOnResultListener.getResultObject();
+    }
+
     public <T extends AbstractUuidObject> void getEntry(final UUID uuid, final OnResultListener<T> resultCallback, final Class<T> clazz) {
         this.getFirstMatchEntry(new UuidFilter(uuid),resultCallback,clazz);
     }
@@ -205,9 +356,35 @@ public class UuidObjectStorage {
         listeners.remove(onStorageChangeListener);
     }
 
+    public void commit() throws UuidObjectStorageException {
+        final BlockingOnResultListener<String> blockingOnResultListener = new BlockingOnResultListener<String>();
+        this.commit(blockingOnResultListener);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
+        }
+    }
+
     public void commit(final OnResultListener<String> resultCallback) {
         for (Class<? extends AbstractUuidObject> keyClazz : this.uuidObjectCache.keySet()) {
             this.commit(resultCallback, keyClazz);
+        }
+    }
+
+    public void commit(final Class<? extends AbstractUuidObject> clazz) throws UuidObjectStorageException {
+        final BlockingOnResultListener<String> blockingOnResultListener = new BlockingOnResultListener<String>();
+        this.commit(blockingOnResultListener,clazz);
+        try {
+            blockingOnResultListener.getCountDownLatch().await();
+        } catch (InterruptedException e) {
+            throw new UuidObjectStorageException(e);
+        }
+        if(!blockingOnResultListener.isSuccess()){
+            throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
