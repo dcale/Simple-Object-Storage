@@ -80,7 +80,8 @@ UuidObjectStorage.getInstance().commit(new OnResultListener<String>() {
         });
 
 
-//if you wish to do the same thing syncronously (blocking) you can use the blockin api, in case of error an UuidObjectStorageException will be thrown:
+//if you wish to do the same thing syncronously (blocking) you can use the blockin api,
+//in case of error an UuidObjectStorageException will be thrown:
 TestModel model = new TestModel("my name","my description");
 UuidObjectStorage.getInstance().addEntry(model, TestModel.class);
 UuidObjectStorage.getInstance().commit();
@@ -127,7 +128,8 @@ UuidObjectStorage.getInstance().getEntry(uuid,new OnResultListener<List<TestMode
             }
         }, TestModel.class);
 
-//if you wish to do the same thing syncronously (blocking) you can use the blockin api, in case of error an UuidObjectStorageException will be thrown:
+//if you wish to do the same thing syncronously (blocking) you can use the blockin api,
+//in case of error an UuidObjectStorageException will be thrown:
 Map<UUID, TestModel> entryMap = UuidObjectStorage.getInstance().getEntries(TestModel.class);
 List<TestModel> entryList = UuidObjectStorage.getInstance().getEntriesAsList(TestModel.class);
 TestModel entry = UuidObjectStorage.getInstance().getEntry(uuid, TestModel.class);
@@ -169,19 +171,20 @@ UuidObjectStorage.getInstance().getFirstMatchEntry(new Filter<TestModel>() {
             }
         }, TestModel.class);
 
-//if you wish to do the same thing syncronously (blocking) you can use the blockin api, in case of error an UuidObjectStorageException will be thrown:
+//if you wish to do the same thing syncronously (blocking) you can use the blockin api,
+//in case of error an UuidObjectStorageException will be thrown:
 List<TestModel> entryList = UuidObjectStorage.getInstance().getEntriesAsList(new Filter<TestModel>() {
-                                                                                         @Override
-                                                                                         public boolean matches(TestModel object) {
-                                                                                             return object.getName().equals("my name");
-                                                                                         }
-                                                                                     },TestModel.class);
+                                                             @Override
+                                                             public boolean matches(TestModel object) {
+                                                                 return object.getName().equals("my name");
+                                                             }
+                                                         },TestModel.class);
 TestModel entry = UuidObjectStorage.getInstance().getFirstMatchEntry(new Filter<TestModel>() {
-                                                                       @Override
-                                                                       public boolean matches(TestModel object) {
-                                                                           return object.getName().equals("my name");
-                                                                       }
-                                                                   }, TestModel.class);
+                                                             @Override
+                                                             public boolean matches(TestModel object) {
+                                                                 return object.getName().equals("my name");
+                                                             }
+                                                         }, TestModel.class);
 ```
 
 
