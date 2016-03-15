@@ -6,7 +6,7 @@ targetCompatibility = 1.7
 
 
 group = 'ch.papers'
-version = '1.1.0'
+version = '1.1.1'
 
 repositories {
     mavenLocal()
