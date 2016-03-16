@@ -1,11 +1,11 @@
 package ch.papers.objectstorage;
 
+import ch.papers.objectstorage.models.AbstractUuidObject;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
-
-import ch.papers.objectstorage.models.AbstractUuidObject;
 
 
 /**

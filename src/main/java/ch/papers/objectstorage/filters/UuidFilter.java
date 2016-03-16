@@ -1,8 +1,8 @@
 package ch.papers.objectstorage.filters;
 
-import java.util.UUID;
-
 import ch.papers.objectstorage.models.AbstractUuidObject;
+
+import java.util.UUID;
 
 /**
  * Created by Alessandro De Carli (@a_d_c_) on 23/01/16.

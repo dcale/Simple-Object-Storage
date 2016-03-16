@@ -1,21 +1,15 @@
 package ch.papers.objectstorage;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-
 import ch.papers.objectstorage.filters.Filter;
 import ch.papers.objectstorage.listeners.OnResultListener;
 import ch.papers.objectstorage.listeners.OnStorageChangeListener;
 import ch.papers.objectstorage.models.AbstractUuidObject;
+import junit.framework.Assert;
+import org.junit.Test;
+
+import java.io.File;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * To work on unit tests, switch the Test Artifact in the Build Variants view.
@@ -125,6 +119,7 @@ public class ObjectStorageUnitTest {
 
             @Override
             public void onError(String message) {
+                System.out.println(message);
                 Assert.assertTrue(false);
                 syncLatch.countDown();
             }

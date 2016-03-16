@@ -6,28 +6,20 @@ package ch.papers.objectstorage;
  * a.decarli@papers.ch
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import ch.papers.objectstorage.filters.Filter;
 import ch.papers.objectstorage.filters.MatchAllFilter;
 import ch.papers.objectstorage.filters.UuidFilter;
 import ch.papers.objectstorage.listeners.BlockingOnResultListener;
-import ch.papers.objectstorage.listeners.DummyOnResultListener;
 import ch.papers.objectstorage.listeners.OnResultListener;
 import ch.papers.objectstorage.listeners.OnStorageChangeListener;
 import ch.papers.objectstorage.models.AbstractUuidObject;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UuidObjectStorage {
 
@@ -35,6 +27,7 @@ public class UuidObjectStorage {
 
     /**
      * Signleton accessor
+     *
      * @return the objectstorage object
      */
     public static UuidObjectStorage getInstance() {
@@ -49,49 +42,48 @@ public class UuidObjectStorage {
 
     private File rootPath;
 
-    private final Map<Class<? extends AbstractUuidObject>, Map<UUID, ? extends AbstractUuidObject>> uuidObjectCache = new LinkedHashMap<Class<? extends AbstractUuidObject>, Map<UUID, ? extends AbstractUuidObject>>();
-    private final Map<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>> listeners = new HashMap<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>>();
+    private final Map<Class<? extends AbstractUuidObject>, Map<UUID, ? extends AbstractUuidObject>> uuidObjectCache = new ConcurrentHashMap<Class<? extends AbstractUuidObject>, Map<UUID, ? extends AbstractUuidObject>>();
+    private final Map<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>> listeners = new ConcurrentHashMap<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>>();
 
     /**
      * Initialises the objectstorage signleton with the filepath, where it should store the objects
+     *
      * @param rootPath
      */
     public synchronized void init(File rootPath) {
         this.rootPath = rootPath;
-        for(Class clazz:this.uuidObjectCache.keySet()){
-            try {
-                this.deleteEntries(new MatchAllFilter(),clazz);
-            } catch (UuidObjectStorageException e) {}
-        }
         this.uuidObjectCache.clear();
+        this.listeners.clear();
     }
 
     /**
      * Add entries to the object storage synchronously.
+     *
      * @param entries the entries to store
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz   dynamic type of objects
+     * @param <T>     generic type of objects
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
-    public <T extends AbstractUuidObject> void addEntries(final Map<UUID, T> entries,final Class<T> clazz) throws UuidObjectStorageException {
+    public <T extends AbstractUuidObject> void addEntries(final Map<UUID, T> entries, final Class<T> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
-        this.addEntries(entries, blockingOnResultListener,clazz);
+        this.addEntries(entries, blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Add entries to the object storage asynchronously.
-     * @param entries the entries to store
+     *
+     * @param entries        the entries to store
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void addEntries(final Map<UUID, T> entries, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         new Thread(new Runnable() {
@@ -110,35 +102,37 @@ public class UuidObjectStorage {
 
     /**
      * Add entries to the object storage synchronously.
+     *
      * @param entries the entries to store
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz   dynamic type of objects
+     * @param <T>     generic type of objects
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
-    public <T extends AbstractUuidObject> void addEntriesAsList(final List<T> entries,final Class<T> clazz) throws UuidObjectStorageException {
+    public <T extends AbstractUuidObject> void addEntriesAsList(final List<T> entries, final Class<T> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
-        this.addEntriesAsList(entries, blockingOnResultListener,clazz);
+        this.addEntriesAsList(entries, blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Add entries to the object storage asynchronously.
-     * @param entries the entries to store
+     *
+     * @param entries        the entries to store
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void addEntriesAsList(final List<T> entries, final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
-        final Map<UUID, T> entriesToAdd = new HashMap<UUID, T>();
-        for (T entry:entries) {
-            entriesToAdd.put(entry.getUuid(),entry);
+        final Map<UUID, T> entriesToAdd = new ConcurrentHashMap<UUID, T>();
+        for (T entry : entries) {
+            entriesToAdd.put(entry.getUuid(), entry);
         }
 
         this.addEntries(entriesToAdd, new OnResultListener<Map<UUID, T>>() {
@@ -151,42 +145,44 @@ public class UuidObjectStorage {
             public void onError(String message) {
                 resultCallback.onError(message);
             }
-        },clazz);
+        }, clazz);
     }
 
     /**
      * Add entry to the object storage synchronously.
+     *
      * @param entry the entry to store
      * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param <T>   generic type of objects
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public <T extends AbstractUuidObject> void addEntry(final T entry, final Class<T> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
-        this.addEntry(entry, blockingOnResultListener,clazz);
+        this.addEntry(entry, blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Add entry to the object storage asynchronously.
-     * @param entry the entry to store
+     *
+     * @param entry          the entry to store
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void addEntry(final T entry, final OnResultListener<T> resultCallback, final Class<T> clazz) {
-        final Map<UUID, T> entriesToAdd = new HashMap<UUID, T>();
-        entriesToAdd.put(entry.getUuid(),entry);
-        this.addEntries(entriesToAdd, new OnResultListener<Map<UUID,T>>() {
+        final Map<UUID, T> entriesToAdd = new ConcurrentHashMap<UUID, T>();
+        entriesToAdd.put(entry.getUuid(), entry);
+        this.addEntries(entriesToAdd, new OnResultListener<Map<UUID, T>>() {
             @Override
-            public void onSuccess(Map<UUID,T> result) {
+            public void onSuccess(Map<UUID, T> result) {
                 resultCallback.onSuccess(result.get(entry.getUuid()));
             }
 
@@ -194,35 +190,37 @@ public class UuidObjectStorage {
             public void onError(String message) {
                 resultCallback.onError(message);
             }
-        },clazz);
+        }, clazz);
     }
 
     /**
      * Delete entry from the object storage synchronously.
+     *
      * @param entry the entry to delete
      * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param <T>   generic type of objects
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public <T extends AbstractUuidObject> void deleteEntry(final T entry, final Class<T> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
-        this.deleteEntry(entry, blockingOnResultListener,clazz);
+        this.deleteEntry(entry, blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Delete entry from the object storage asynchronously.
-     * @param entry the entry to delete
+     *
+     * @param entry          the entry to delete
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void deleteEntry(final T entry, final OnResultListener<T> resultCallback, final Class<T> clazz) {
         this.deleteEntries(new UuidFilter(entry.getUuid()), new OnResultListener<Map<UUID, T>>() {
@@ -235,35 +233,37 @@ public class UuidObjectStorage {
             public void onError(String message) {
                 resultCallback.onError(message);
             }
-        },clazz);
+        }, clazz);
     }
 
     /**
      * Delete entries matching filter from the object storage synchronously.
+     *
      * @param filter filter to match entries you want to delete
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz  dynamic type of objects
+     * @param <T>    generic type of objects
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public <T extends AbstractUuidObject> void deleteEntries(final Filter<T> filter, final Class<T> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener blockingOnResultListener = new BlockingOnResultListener();
-        this.deleteEntries(filter, blockingOnResultListener,clazz);
+        this.deleteEntries(filter, blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Delete entries matching filter from the object storage asynchronously.
-     * @param filter filter to match entries you want to delete
+     *
+     * @param filter         filter to match entries you want to delete
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void deleteEntries(final Filter<T> filter, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         this.getEntries(filter, new OnResultListener<Map<UUID, T>>() {
@@ -285,9 +285,10 @@ public class UuidObjectStorage {
 
     /**
      * Returns the matching filter entries from the object storage synchronously.
+     *
      * @param filter filter to match entries you want to get
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz  dynamic type of objects
+     * @param <T>    generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -299,7 +300,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -307,16 +308,17 @@ public class UuidObjectStorage {
 
     /**
      * Returns the matching filter entries from the object storage asynchronously.
-     * @param filter filter to match entries you want to get
+     *
+     * @param filter         filter to match entries you want to get
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void getEntries(final Filter<T> filter, final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final Map<UUID, T> resultMap = new HashMap<UUID, T>();
+                final Map<UUID, T> resultMap = new ConcurrentHashMap<UUID, T>();
                 try {
                     for (T uuidObject : UuidObjectStorage.this.<T>getOrCreateClassCache(clazz).values()) {
                         if (filter.matches(uuidObject)) {
@@ -325,6 +327,7 @@ public class UuidObjectStorage {
                     }
                     resultCallback.onSuccess(resultMap);
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     resultCallback.onError(e.getMessage());
                 }
             }
@@ -333,8 +336,9 @@ public class UuidObjectStorage {
 
     /**
      * Returns all entries from the object storage synchronously.
+     *
      * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param <T>   generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -346,7 +350,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -354,9 +358,10 @@ public class UuidObjectStorage {
 
     /**
      * Returns all entries from the object storage asynchronously.
+     *
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -366,8 +371,9 @@ public class UuidObjectStorage {
 
     /**
      * Returns the matching filter entries from the object storage synchronously.
+     *
      * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param <T>   generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -379,7 +385,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -387,10 +393,11 @@ public class UuidObjectStorage {
 
     /**
      * Returns the matching filter entries from the object storage asynchronously.
-     * @param filter filter to match entries you want to get
+     *
+     * @param filter         filter to match entries you want to get
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void getEntriesAsList(final Filter<T> filter, final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
         this.getEntries(filter, new OnResultListener<Map<UUID, T>>() {
@@ -408,8 +415,9 @@ public class UuidObjectStorage {
 
     /**
      * Returns all entries from the object storage synchronously.
+     *
      * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param <T>   generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -421,7 +429,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -429,9 +437,10 @@ public class UuidObjectStorage {
 
     /**
      * Returns all entries from the object storage asynchronously.
+     *
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      * @return matching entries
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -441,9 +450,10 @@ public class UuidObjectStorage {
 
     /**
      * Returns the first matching entry from the object storage synchronously.
-     * @param clazz dynamic type of objects
+     *
+     * @param clazz  dynamic type of objects
      * @param filter filter to match entry you want to get
-     * @param <T> generic type of objects
+     * @param <T>    generic type of objects
      * @return matching entry
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -455,7 +465,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -463,10 +473,11 @@ public class UuidObjectStorage {
 
     /**
      * Returns the first matching entry from the object storage asynchronously.
-     * @param filter filter to match entry you want to get
+     *
+     * @param filter         filter to match entry you want to get
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void getFirstMatchEntry(final Filter<T> filter, final OnResultListener<T> resultCallback, final Class<T> clazz) {
         this.getEntries(filter, new OnResultListener<Map<UUID, T>>() {
@@ -483,14 +494,15 @@ public class UuidObjectStorage {
             public void onError(String message) {
                 resultCallback.onError(message);
             }
-        },clazz);
+        }, clazz);
     }
 
     /**
      * Returns the first matching entry from the object storage synchronously.
+     *
      * @param clazz dynamic type of objects
-     * @param uuid the identifier of the object
-     * @param <T> generic type of objects
+     * @param uuid  the identifier of the object
+     * @param <T>   generic type of objects
      * @return matching entry
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
@@ -502,7 +514,7 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
         return blockingOnResultListener.getResultObject();
@@ -510,20 +522,22 @@ public class UuidObjectStorage {
 
     /**
      * Returns the first matching entry from the object storage asynchronously.
-     * @param uuid the identifier of the object
+     *
+     * @param uuid           the identifier of the object
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz          dynamic type of objects
+     * @param <T>            generic type of objects
      */
     public <T extends AbstractUuidObject> void getEntry(final UUID uuid, final OnResultListener<T> resultCallback, final Class<T> clazz) {
-        this.getFirstMatchEntry(new UuidFilter(uuid),resultCallback,clazz);
+        this.getFirstMatchEntry(new UuidFilter(uuid), resultCallback, clazz);
     }
 
     /**
      * Register a listener that will be called if storage of a given class changes.
+     *
      * @param onStorageChangeListener the listener that should be called
-     * @param clazz dynamic type of objects
-     * @param <T> generic type of objects
+     * @param clazz                   dynamic type of objects
+     * @param <T>                     generic type of objects
      */
     public <T extends AbstractUuidObject> void registerOnChangeListener(OnStorageChangeListener onStorageChangeListener, final Class<T> clazz) {
         final List<OnStorageChangeListener> listeners = this.getOrCreateListenerList(clazz);
@@ -537,6 +551,7 @@ public class UuidObjectStorage {
 
     /**
      * Commit and persist all entries to disk synchronously
+     *
      * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public void commit() throws UuidObjectStorageException {
@@ -547,13 +562,14 @@ public class UuidObjectStorage {
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Commit and persist all entries to disk asynchronously
+     *
      * @param resultCallback the asynchronous callback
      */
     public void commit(final OnResultListener<String> resultCallback) {
@@ -564,26 +580,28 @@ public class UuidObjectStorage {
 
     /**
      * Commit and persist the entries of a class to disk synchronously
+     *
      * @param clazz dynamic type of objects
      * @throws UuidObjectStorageException
      */
     public void commit(final Class<? extends AbstractUuidObject> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener<String> blockingOnResultListener = new BlockingOnResultListener<String>();
-        this.commit(blockingOnResultListener,clazz);
+        this.commit(blockingOnResultListener, clazz);
         try {
             blockingOnResultListener.getCountDownLatch().await();
         } catch (InterruptedException e) {
             throw new UuidObjectStorageException(e);
         }
-        if(!blockingOnResultListener.isSuccess()){
+        if (!blockingOnResultListener.isSuccess()) {
             throw new UuidObjectStorageException(blockingOnResultListener.getErrorMessage());
         }
     }
 
     /**
      * Commit and persist the entries of a class to disk asynchronously
+     *
      * @param resultCallback the asynchronous callback
-     * @param clazz dynamic type of objects
+     * @param clazz          dynamic type of objects
      */
     public void commit(final OnResultListener<String> resultCallback, final Class<? extends AbstractUuidObject> clazz) {
         new Thread(new Runnable() {
@@ -610,7 +628,7 @@ public class UuidObjectStorage {
         List<OnStorageChangeListener> listeners = this.listeners.get(clazz);
         if (listeners == null) {
             listeners = new ArrayList<OnStorageChangeListener>();
-            this.listeners.put(clazz,listeners);
+            this.listeners.put(clazz, listeners);
         }
         return listeners;
     }
@@ -626,7 +644,7 @@ public class UuidObjectStorage {
 
         Map<UUID, T> entries = (Map<UUID, T>) UuidObjectStorage.this.uuidObjectCache.get(clazz);
         if (entries == null) {
-            entries = new HashMap<UUID, T>();
+            entries = new ConcurrentHashMap<UUID, T>();
             this.uuidObjectCache.put(clazz, entries);
             this.persistEntries(clazz);
         }
@@ -647,7 +665,9 @@ public class UuidObjectStorage {
         final File objectStorageFile = new File(this.rootPath, clazz.getSimpleName() + ".json");
         final FileInputStream fileInputStream = new FileInputStream(objectStorageFile);
         Reader fileInputStreamReader = new InputStreamReader(fileInputStream);
-        final Map<UUID, T> entriesMap = Constants.GSON.fromJson(fileInputStreamReader, new UuidObjectMapType(clazz));
+        final Map<UUID, T> entriesMap = new ConcurrentHashMap<UUID, T>();
+        final Map<UUID, T> deserializedMap = Constants.GSON.fromJson(fileInputStreamReader, new UuidObjectMapType(clazz));
+        entriesMap.putAll(deserializedMap);
         this.uuidObjectCache.put(clazz, entriesMap);
         fileInputStreamReader.close();
     }
