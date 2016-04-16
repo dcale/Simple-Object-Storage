@@ -1,12 +1,13 @@
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 
 group = 'ch.papers'
-version = '1.1.1'
+version = '1.1.2'
 
 repositories {
     mavenLocal()
@@ -19,3 +20,15 @@ dependencies {
 
     compile 'com.google.code.gson:gson:2.5'
 }
+
+task myJavadocs(type: Javadoc) {
+  source = sourceSets.main.allJava
+}
+
+
+jacocoTestReport {
+  group = "Reporting"
+  description = "Generate Jacoco coverage reports after running tests."
+  additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+}
+test { finalizedBy jacocoTestReport }

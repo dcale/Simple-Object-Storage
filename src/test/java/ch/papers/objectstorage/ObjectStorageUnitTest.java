@@ -1,10 +1,11 @@
 package ch.papers.objectstorage;
 
 import ch.papers.objectstorage.filters.Filter;
+import ch.papers.objectstorage.listeners.DummyOnResultListener;
 import ch.papers.objectstorage.listeners.OnResultListener;
 import ch.papers.objectstorage.listeners.OnStorageChangeListener;
 import ch.papers.objectstorage.models.AbstractUuidObject;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -129,6 +130,69 @@ public class ObjectStorageUnitTest {
         UuidObjectStorage.getInstance().unRegisterOnChangeListener(listener, TestModel.class);
     }
 
+    @Test
+    public void testSynchronousOperations() throws InterruptedException {
+        UuidObjectStorage.getInstance().init(STORAGE_ROOT);
+        try {
+            UuidObjectStorage.getInstance().addEntries(new HashMap<UUID, TestModel>(), TestModel.class); // test the empty add
+            UuidObjectStorage.getInstance().addEntriesAsList(new ArrayList<TestModel>(), TestModel.class);
+            UuidObjectStorage.getInstance().addEntry(new TestModel("syncro", "yes"), TestModel.class);
+            TestModel syncroEntry = UuidObjectStorage.getInstance().getFirstMatchEntry(new Filter<TestModel>() {
+                @Override
+                public boolean matches(TestModel object) {
+                    return object.name.equals("syncro");
+                }
+            }, TestModel.class);
+            Assert.assertEquals(syncroEntry.getDescription(), "yes");
+
+            Assert.assertEquals(syncroEntry, UuidObjectStorage.getInstance().getEntry(syncroEntry.getUuid(),TestModel.class));
+
+            Assert.assertEquals(UuidObjectStorage.getInstance().getEntriesAsList(TestModel.class).size(), UuidObjectStorage.getInstance().getEntries(TestModel.class).size());
+
+            Assert.assertEquals(UuidObjectStorage.getInstance().getEntries(new Filter<TestModel>() {
+                @Override
+                public boolean matches(TestModel object) {
+                    return object.name.equals("syncro");
+                }
+            }, TestModel.class).size(),1);
+
+            Assert.assertEquals(UuidObjectStorage.getInstance().getEntriesAsList(new Filter<TestModel>() {
+                @Override
+                public boolean matches(TestModel object) {
+                    return object.name.equals("syncro");
+                }
+            }, TestModel.class).size(),1);
+
+            UuidObjectStorage.getInstance().deleteEntry(syncroEntry, TestModel.class);
+            UuidObjectStorage.getInstance().deleteEntries(new Filter<TestModel>() {
+                @Override
+                public boolean matches(TestModel object) {
+                    return false;
+                }
+            }, TestModel.class);
+
+            // try the various commit options
+            UuidObjectStorage.getInstance().commit();
+            UuidObjectStorage.getInstance().commit(DummyOnResultListener.getInstance());
+            UuidObjectStorage.getInstance().commit(TestModel.class);
+
+        } catch (UuidObjectStorageException e) {
+            Assert.assertTrue(false);
+        }
+
+        try {
+            TestModel syncroEntry = UuidObjectStorage.getInstance().getFirstMatchEntry(new Filter<TestModel>() {
+                @Override
+                public boolean matches(TestModel object) {
+                    return object.name.equals("syncro"); // shouldn't be available anymore we deleted it
+                }
+            }, TestModel.class);
+        } catch (UuidObjectStorageException e) {
+            Assert.assertTrue(true);
+        }
+
+
+    }
 
     @Test
     public void testSingleAddPerformance() throws InterruptedException {
@@ -364,7 +428,7 @@ public class ObjectStorageUnitTest {
             List<TestModel> result = UuidObjectStorage.getInstance().getEntriesAsList(TestModel.class);
             System.out.println("took me " + (System.currentTimeMillis() - startTime) + "ms to get " + result.size() + " entries as list");
             startTime = System.currentTimeMillis();
-            Map<UUID,TestModel> resultMap = UuidObjectStorage.getInstance().getEntries(TestModel.class);
+            Map<UUID, TestModel> resultMap = UuidObjectStorage.getInstance().getEntries(TestModel.class);
             System.out.println("took me " + (System.currentTimeMillis() - startTime) + "ms to get " + resultMap.size() + " entries as Map");
         } catch (UuidObjectStorageException e) {
             e.printStackTrace();

@@ -48,7 +48,7 @@ public class UuidObjectStorage {
     /**
      * Initialises the objectstorage signleton with the filepath, where it should store the objects
      *
-     * @param rootPath
+     * @param rootPath path where the data should be stored
      */
     public synchronized void init(File rootPath) {
         this.rootPath = rootPath;
@@ -362,8 +362,6 @@ public class UuidObjectStorage {
      * @param resultCallback the asynchronous callback
      * @param clazz          dynamic type of objects
      * @param <T>            generic type of objects
-     * @return matching entries
-     * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public <T extends AbstractUuidObject> void getEntries(final OnResultListener<Map<UUID, T>> resultCallback, final Class<T> clazz) {
         this.getEntries(new MatchAllFilter(), resultCallback, clazz);
@@ -372,6 +370,7 @@ public class UuidObjectStorage {
     /**
      * Returns the matching filter entries from the object storage synchronously.
      *
+     * @param filter         filter to match entries you want to get
      * @param clazz dynamic type of objects
      * @param <T>   generic type of objects
      * @return matching entries
@@ -441,8 +440,6 @@ public class UuidObjectStorage {
      * @param resultCallback the asynchronous callback
      * @param clazz          dynamic type of objects
      * @param <T>            generic type of objects
-     * @return matching entries
-     * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public <T extends AbstractUuidObject> void getEntriesAsList(final OnResultListener<List<T>> resultCallback, final Class<T> clazz) {
         this.getEntriesAsList(new MatchAllFilter(), resultCallback, clazz);
@@ -582,7 +579,7 @@ public class UuidObjectStorage {
      * Commit and persist the entries of a class to disk synchronously
      *
      * @param clazz dynamic type of objects
-     * @throws UuidObjectStorageException
+     * @throws UuidObjectStorageException if something goes wrong during the synchronous call
      */
     public void commit(final Class<? extends AbstractUuidObject> clazz) throws UuidObjectStorageException {
         final BlockingOnResultListener<String> blockingOnResultListener = new BlockingOnResultListener<String>();
@@ -638,7 +635,7 @@ public class UuidObjectStorage {
             if (!this.uuidObjectCache.containsKey(clazz)) {
                 this.<T>loadEntries(clazz);
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             // this happens the first time you add an unknown class and it's ok
         }
 
