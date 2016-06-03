@@ -651,10 +651,23 @@ public class UuidObjectStorage {
 
     private synchronized void persistEntries(Class<? extends AbstractUuidObject> clazz) throws IOException {
         final File objectStorageFile = new File(this.rootPath, clazz.getSimpleName() + ".json");
-        final FileOutputStream fileOutputStream = new FileOutputStream(objectStorageFile);
-        OutputStreamWriter fileOutputStreamWriter = new OutputStreamWriter(fileOutputStream);
-        Constants.GSON.toJson(this.uuidObjectCache.get(clazz), fileOutputStreamWriter);
-        fileOutputStreamWriter.close();
+        final File objectStorageTempFile = new File(this.rootPath, clazz.getSimpleName() + ".json.tmp");   
+        OutputStreamWriter fileOutputStreamWriter = null; 
+        try {
+        	final FileOutputStream fileOutputStream = new FileOutputStream(objectStorageTempFile);
+        	fileOutputStreamWriter = new OutputStreamWriter(fileOutputStream);
+        	Constants.GSON.toJson(this.uuidObjectCache.get(clazz), fileOutputStreamWriter);
+        	fileOutputStreamWriter.flush();
+        	fileOutputStreamWriter.close();
+        	fileOutputStreamWriter = null;
+        	if (!objectStorageTempFile.renameTo(objectStorageFile)) {
+        		throw new IOException("Renaming file '" + objectStorageTempFile + "' to '" + objectStorageFile + "' failed");
+        	}
+        } finally {
+        	if (fileOutputStreamWriter != null) {
+        		fileOutputStreamWriter.close();
+        	}
+        }
     }
 
     private synchronized <T extends AbstractUuidObject> void loadEntries(Class<T> clazz) throws IOException {

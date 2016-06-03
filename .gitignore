@@ -3,3 +3,8 @@
 *.iml
 *.json
 /build
+
+bin/
+.classpath
+.project
+.settings/
