@@ -46,14 +46,25 @@ public class UuidObjectStorage {
     private final Map<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>> listeners = new ConcurrentHashMap<Class<? extends AbstractUuidObject>, List<OnStorageChangeListener>>();
 
     /**
+     * Check the initialisation state
+     *
+     * @return the initialisation state
+     */
+    public boolean isInitialised(){
+        return this.rootPath != null;
+    }
+
+    /**
      * Initialises the objectstorage signleton with the filepath, where it should store the objects
      *
      * @param rootPath path where the data should be stored
      */
     public synchronized void init(File rootPath) {
-        this.rootPath = rootPath;
-        this.uuidObjectCache.clear();
-        this.listeners.clear();
+        if(this.isInitialised()){
+            this.rootPath = rootPath;
+            this.uuidObjectCache.clear();
+            this.listeners.clear();
+        }
     }
 
     /**
@@ -535,10 +546,12 @@ public class UuidObjectStorage {
      * @param onStorageChangeListener the listener that should be called
      * @param clazz                   dynamic type of objects
      * @param <T>                     generic type of objects
+     * @return the registered listener can be used for unregistering later on 
      */
-    public <T extends AbstractUuidObject> void registerOnChangeListener(OnStorageChangeListener onStorageChangeListener, final Class<T> clazz) {
+    public <T extends AbstractUuidObject> OnStorageChangeListener registerOnChangeListener(OnStorageChangeListener onStorageChangeListener, final Class<T> clazz) {
         final List<OnStorageChangeListener> listeners = this.getOrCreateListenerList(clazz);
         listeners.add(onStorageChangeListener);
+        return onStorageChangeListener;
     }
 
     public <T extends AbstractUuidObject> void unRegisterOnChangeListener(OnStorageChangeListener onStorageChangeListener, final Class<T> clazz) {
