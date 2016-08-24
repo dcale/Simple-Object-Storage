@@ -60,7 +60,7 @@ public class UuidObjectStorage {
      * @param rootPath path where the data should be stored
      */
     public synchronized void init(File rootPath) {
-        if(this.isInitialised()){
+        if(!this.isInitialised()){
             this.rootPath = rootPath;
             this.uuidObjectCache.clear();
             this.listeners.clear();
